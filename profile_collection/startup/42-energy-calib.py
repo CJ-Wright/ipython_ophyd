@@ -9,9 +9,9 @@ def lamda_from_bragg(th, d, n):
     return 2 * d * np.sin(th / 2.) / n
 
 
-def find_peaks(chi, sides=6, intensity_threshold=0):
+def find_peaks(chi, sides=3, intensity_threshold=0, order=5):
     # Find all potential peaks
-    preliminary_peaks = argrelmax(chi, order=20)[0]
+    preliminary_peaks = argrelmax(chi, order=order)[0]
 
     # peaks must have at least sides pixels of data to work with
     preliminary_peaks2 = preliminary_peaks[
@@ -33,7 +33,7 @@ def find_peaks(chi, sides=6, intensity_threshold=0):
     return left_idxs, right_idxs, peak_centers
 
 
-def get_wavelength_from_std_tth(x, y, d_spacings, ns, plot=False):
+def get_wavelength_from_std_tth(x, y, d_spacings, ns, plot=False, order=5):
     """
     Return the wavelength from a two theta scan of a standard
 
@@ -56,7 +56,7 @@ def get_wavelength_from_std_tth(x, y, d_spacings, ns, plot=False):
     float:
         The standard deviation of the wavelength
     """
-    l, r, c = find_peaks(y)
+    l, r, c = find_peaks(y, order=order)
     lmfit_centers = []
     for lidx, ridx, peak_center in zip(l, r, c):
         mod = VoigtModel()
@@ -75,7 +75,9 @@ def get_wavelength_from_std_tth(x, y, d_spacings, ns, plot=False):
     l_peaks = lmfit_centers[lmfit_centers < 0.]
     r_peaks = lmfit_centers[lmfit_centers > 0.]
     for peak_set in [r_peaks, l_peaks[::-1]]:
-        for peak_center, d, n in zip(peak_set, d_spacings[:len(peak_set)], ns[:len(peak_set)]):
+        for peak_center, d, n in zip(
+                peak_set,
+                d_spacings[:len(peak_set)], ns[:len(peak_set)]):
             tth = np.deg2rad(np.abs(peak_center))
             wavelengths.append(lamda_from_bragg(tth, d, n))
     return np.average(wavelengths), np.std(wavelengths)
@@ -87,19 +89,19 @@ if __name__ == '__main__':
     calibration_file = os.path.join('../../data/LaB6_d.txt')
 
     # step 0 load data
-    d_spacings = np.loadtxt(calibration_file)
-    for data_file in ['../../data/Lab6_67p8.chi', '../../data/Lab6_67p6.chi']:
+    d_spacings = np.loadtxt(calibration_file, skiprows=3)
+    print(d_spacings)
+    for data_file in [os.path.join('../../data/', f)
+                      for f in os.listdir('../../data/')
+                      if f.endswith('.chi')]:
         a = np.loadtxt(data_file)
         wavechange = []
         x = a[:, 0]
-        x = np.hstack((np.zeros(1), x))
-        x = np.hstack((-x[::-1], x))
         y = a[:, 1]
-        y = np.hstack((np.zeros(1), y))
-        y = np.hstack((y[::-1], y))
 
         x = x[:]
         y = y[:]
         print(get_wavelength_from_std_tth(x, y, d_spacings,
-                                                  np.ones(d_spacings.shape),
-                                                  ))
+                                          np.ones(d_spacings.shape),
+                                          plot=True
+                                          ))
