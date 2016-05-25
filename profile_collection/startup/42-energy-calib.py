@@ -75,7 +75,7 @@ def get_wavelength_from_std_tth(x, y, d_spacings, ns, plot=False):
     l_peaks = lmfit_centers[lmfit_centers < 0.]
     r_peaks = lmfit_centers[lmfit_centers > 0.]
     for peak_set in [r_peaks, l_peaks[::-1]]:
-        for peak_center, d, n in zip(peak_set, d_spacings, ns):
+        for peak_center, d, n in zip(peak_set, d_spacings[:len(peak_set)], ns[:len(peak_set)]):
             tth = np.deg2rad(np.abs(peak_center))
             wavelengths.append(lamda_from_bragg(tth, d, n))
     return np.average(wavelengths), np.std(wavelengths)
@@ -91,19 +91,15 @@ if __name__ == '__main__':
     for data_file in ['../../data/Lab6_67p8.chi', '../../data/Lab6_67p6.chi']:
         a = np.loadtxt(data_file)
         wavechange = []
-        b = np.linspace(.1, 3, 100)
-        for dx in b:
-            x = a[:, 0]
-            x = np.hstack((np.zeros(1), x))
-            x = np.hstack((-x[::-1], x))
-            y = a[:, 1]
-            y = np.hstack((np.zeros(1), y))
-            y = np.hstack((y[::-1], y))
+        x = a[:, 0]
+        x = np.hstack((np.zeros(1), x))
+        x = np.hstack((-x[::-1], x))
+        y = a[:, 1]
+        y = np.hstack((np.zeros(1), y))
+        y = np.hstack((y[::-1], y))
 
-            x = x[:] + dx
-            y = y[:]
-            wavechange.append(get_wavelength_from_std_tth(x, y, d_spacings,
-                                                      np.ones(d_spacings.shape),
-                                                      )[0])
-        plt.plot(b, wavechange)
-    plt.show()
+        x = x[:]
+        y = y[:]
+        print(get_wavelength_from_std_tth(x, y, d_spacings,
+                                                  np.ones(d_spacings.shape),
+                                                  ))
