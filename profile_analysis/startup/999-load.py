@@ -8,15 +8,10 @@ os.environ['XPDAN_SETUP'] = str(0)
 
 # setup glbl
 from xpdan.glbl import an_glbl
-from xpdan.pipelines.callback import MainCallback
+from xpdan.pipelines.main import *
+# from xpdan.pipelines.callback import MainCallback
 
 an_glbl['exp_db'] = db  # alias
-
-s = MainCallback(db, an_glbl['tiff_base'],
-                 calibration_md_folder=an_glbl['config_base'],
-                 write_to_disk=True,
-                 vis=True)
-
-d.subscribe(s)
-
-d.start()
+calibration_md_folder['file_path'] = os.path.join( an_glbl['config_base'],
+                                                   'xpdAcq_calib_info.yml')
+d.subscribe(lambda x: raw_source.emit(x))
